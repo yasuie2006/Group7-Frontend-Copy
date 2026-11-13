@@ -16,7 +16,12 @@ const formatPrice = (price) =>
     currency: "PHP",
   }).format(Number(price));
 
-export default function ProductCard({ product, onEdit, onDelete }) {
+export default function ProductCard({
+  product,
+  onEdit,
+  onDelete,
+  isAdmin,
+}) {
   return (
     <Card
       sx={{
@@ -62,17 +67,21 @@ export default function ProductCard({ product, onEdit, onDelete }) {
           Details
         </Button>
 
-        <Button size="small" onClick={() => onEdit(product)}>
-          Edit
-        </Button>
+        {isAdmin && (
+          <>
+            <Button size="small" onClick={() => onEdit(product)}>
+              Edit
+            </Button>
 
-        <Button
-          size="small"
-          color="error"
-          onClick={() => onDelete(product)}
-        >
-          Delete
-        </Button>
+            <Button
+              size="small"
+              color="error"
+              onClick={() => onDelete(product)}
+            >
+              Delete
+            </Button>
+          </>
+        )}
       </CardActions>
     </Card>
   );
