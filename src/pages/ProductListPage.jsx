@@ -19,6 +19,7 @@ export default function ProductListPage({
   onAdd,
   onUpdate,
   onDelete,
+  isAdmin,
 }) {
   const [formOpen, setFormOpen] = useState(false);
   const [editingProduct, setEditingProduct] = useState(null);
@@ -86,13 +87,15 @@ export default function ProductListPage({
           </Typography>
         </div>
 
-        <Button
-          variant="contained"
-          startIcon={<AddIcon />}
-          onClick={handleAddClick}
-        >
-          Add Product
-        </Button>
+        {isAdmin && (
+          <Button
+            variant="contained"
+            startIcon={<AddIcon />}
+            onClick={handleAddClick}
+          >
+            Add Product
+          </Button>
+        )}
       </div>
 
       {loading ? (
@@ -104,7 +107,7 @@ export default function ProductListPage({
         </div>
       ) : products.length === 0 ? (
         <Alert severity="info">
-          No products yet. Click Add Product to get started.
+          No products available.
         </Alert>
       ) : (
         <div className="product-grid">
@@ -114,28 +117,33 @@ export default function ProductListPage({
               product={product}
               onEdit={handleEditClick}
               onDelete={setDeletingProduct}
+              isAdmin={isAdmin}
             />
           ))}
         </div>
       )}
 
-      <ProductFormDialog
-        open={formOpen}
-        product={editingProduct}
-        categories={categories}
-        onClose={() => {
-          setFormOpen(false);
-          setEditingProduct(null);
-        }}
-        onSave={handleSave}
-      />
+      {isAdmin && (
+        <>
+          <ProductFormDialog
+            open={formOpen}
+            product={editingProduct}
+            categories={categories}
+            onClose={() => {
+              setFormOpen(false);
+              setEditingProduct(null);
+            }}
+            onSave={handleSave}
+          />
 
-      <DeleteProductDialog
-        open={Boolean(deletingProduct)}
-        product={deletingProduct}
-        onClose={() => setDeletingProduct(null)}
-        onConfirm={handleDelete}
-      />
+          <DeleteProductDialog
+            open={Boolean(deletingProduct)}
+            product={deletingProduct}
+            onClose={() => setDeletingProduct(null)}
+            onConfirm={handleDelete}
+          />
+        </>
+      )}
 
       <Snackbar
         open={Boolean(message)}

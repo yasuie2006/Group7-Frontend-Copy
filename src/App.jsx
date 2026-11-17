@@ -1,15 +1,23 @@
+
 import { useCallback, useEffect, useState } from "react";
 import { Route, Routes } from "react-router-dom";
 import api from "./api/axios";
+import { useAuth } from "./context/AuthContext";
 import MainLayout from "./layouts/MainLayout";
 import ProductListPage from "./pages/ProductListPage";
 import ProductDetailsPage from "./pages/ProductDetailsPage";
+import LoginPage from "./pages/LoginPage";
+import RegisterPage from "./pages/RegisterPage";
 import NotFoundPage from "./pages/NotFoundPage";
+import ProtectedRoute from "./routes/ProtectedRoute";
+import AdminRoute from "./routes/AdminRoute";
 
 export default function App() {
+  const { isAuthenticated, isAdmin } = useAuth();
+
   const [products, setProducts] = useState([]);
   const [categories, setCategories] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
   const fetchProducts = useCallback(async () => {
@@ -26,9 +34,7 @@ export default function App() {
         }))
       );
     } catch (err) {
-      setError(
-        err.response?.data?.message || "Failed to load products."
-      );
+      setError(err.response?.data?.message || "Failed to load products.");
     } finally {
       setLoading(false);
     }
@@ -39,16 +45,22 @@ export default function App() {
       const response = await api.get("/categories");
       setCategories(response.data.data);
     } catch (err) {
-      setError(
-        err.response?.data?.message || "Failed to load categories."
-      );
+      setError(err.response?.data?.message || "Failed to load categories.");
     }
   }, []);
 
   useEffect(() => {
-    fetchProducts();
     fetchCategories();
-  }, [fetchProducts, fetchCategories]);
+  }, [fetchCategories]);
+
+  useEffect(() => {
+    if (isAuthenticated) {
+      fetchProducts();
+    } else {
+      setProducts([]);
+      setLoading(false);
+    }
+  }, [isAuthenticated, fetchProducts]);
 
   const handleAddProduct = async (newProduct) => {
     try {
@@ -63,12 +75,9 @@ export default function App() {
       }
 
       await api.post("/products", formData);
-
       await fetchProducts();
     } catch (err) {
-      setError(
-        err.response?.data?.message || "Failed to add product."
-      );
+      setError(err.response?.data?.message || "Failed to add product.");
       throw err;
     }
   };
@@ -87,12 +96,9 @@ export default function App() {
       }
 
       await api.post(`/products/${id}`, formData);
-
       await fetchProducts();
     } catch (err) {
-      setError(
-        err.response?.data?.message || "Failed to update product."
-      );
+      setError(err.response?.data?.message || "Failed to update product.");
       throw err;
     }
   };
@@ -102,9 +108,7 @@ export default function App() {
       await api.delete(`/products/${id}`);
       await fetchProducts();
     } catch (err) {
-      setError(
-        err.response?.data?.message || "Failed to delete product."
-      );
+      setError(err.response?.data?.message || "Failed to delete product.");
       throw err;
     }
   };
@@ -114,25 +118,47 @@ export default function App() {
       {error && <p role="alert">{error}</p>}
 
       <Routes>
-        <Route
-          path="/"
-          element={
-            <ProductListPage
-              products={products}
-              categories={categories}
-              loading={loading}
-              onRefresh={fetchProducts}
-              onAdd={handleAddProduct}
-              onUpdate={handleUpdateProduct}
-              onDelete={handleDeleteProduct}
-            />
-          }
-        />
+        <Route path="/login" element={<LoginPage />} />
+        <Route path="/register" element={<RegisterPage />} />
 
-        <Route
-          path="/products/:id"
-          element={<ProductDetailsPage products={products} />}
-        />
+        <Route element={<ProtectedRoute />}>
+          <Route
+            path="/"
+            element={
+              <ProductListPage
+                products={products}
+                categories={categories}
+                loading={loading}
+                onAdd={handleAddProduct}
+                onUpdate={handleUpdateProduct}
+                onDelete={handleDeleteProduct}
+                isAdmin={false}
+              />
+            }
+          />
+
+          <Route
+            path="/products/:id"
+            element={<ProductDetailsPage products={products} />}
+          />
+        </Route>
+
+        <Route element={<AdminRoute />}>
+          <Route
+            path="/admin/products"
+            element={
+              <ProductListPage
+                products={products}
+                categories={categories}
+                loading={loading}
+                onAdd={handleAddProduct}
+                onUpdate={handleUpdateProduct}
+                onDelete={handleDeleteProduct}
+                isAdmin={isAdmin}
+              />
+            }
+          />
+        </Route>
 
         <Route path="*" element={<NotFoundPage />} />
       </Routes>
